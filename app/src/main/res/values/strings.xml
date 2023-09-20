@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">NoPainNoGain</string>
+    <string name="main_title">No Pain No Gain</string>
+    <string name="choose_day">Выбери день</string>
+    <string name="choose_group">Выбери группу мышц</string>
+    <string name="choose_exercise">Выбери упражнение</string>
+
+    <string name="group_back">Спина</string>
+    <string name="group_chest">Грудь</string>
+    <string name="group_shoulders">Плечи</string>
+    <string name="group_legs">Ноги</string>
+    <string name="group_biceps">Бицепс</string>
+    <string name="group_triceps">Трицепс</string>
+    <string name="group_abs">Пресс</string>
+    <string name="add_day">Добавь день</string>
+    <string name="add_muscle_group">Добавь группу мышц</string>
+    <string name="add_exercise">Добавь упражнение</string>
+    <string name="save_training">Сохранить тренировку</string>
+    <string name="reps">Повторения</string>
+    <string name="weight">Вес</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+</resources>
