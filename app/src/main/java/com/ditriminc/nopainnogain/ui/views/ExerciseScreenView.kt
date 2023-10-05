@@ -58,7 +58,6 @@ fun ExerciseScreen(exerciseScreenViewModel: ExerciseScreenViewModel = viewModel(
     uiState.groupId.value = intent!!.getLongExtra("groupId", -1)
     exerciseScreenViewModel.fetchGroupExercises(uiState.groupId.value)
 
-
     Scaffold(
         topBar = {},
         floatingActionButton = {
