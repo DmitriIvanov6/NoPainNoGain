@@ -1,10 +1,13 @@
 package com.ditriminc.nopainnogain.ui.views
 
 import android.app.Activity
+import android.app.RemoteAction
+import android.media.Image
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,30 +21,50 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ditriminc.nopainnogain.R
 import com.ditriminc.nopainnogain.data.entities.TrainingSet
@@ -49,12 +72,20 @@ import com.ditriminc.nopainnogain.ui.viewmodels.ExerciseViewModel
 
 
 val columnWidth = 90.dp
+const val REACTION_TIRED = 1
+const val REACTION_NORMAL = 1
+const val REACTION_FRESH = 1
+
+
+data class ReactionItem(
+    val img: Image,
+    val isSelected: Boolean,
+)
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
-
     val uiState by exerciseViewModel.uiState.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
@@ -67,19 +98,16 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
         //todo рассмотреть необходимость применения блока
     }
 
-    Scaffold(
-        topBar = {},
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { exerciseViewModel.openAddSetDialog()},
-                containerColor = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(60.dp),
-                shape = CircleShape
-            ) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = "add new")
-            }
+    Scaffold(topBar = {}, floatingActionButton = {
+        FloatingActionButton(
+            onClick = { exerciseViewModel.openAddSetDialog() },
+            containerColor = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.size(60.dp),
+            shape = CircleShape
+        ) {
+            Icon(imageVector = Icons.Filled.Add, contentDescription = "add new")
         }
-    ) { paddingValues ->
+    }) { paddingValues ->
         Box(
             modifier = Modifier.padding(
                 bottom = paddingValues.calculateBottomPadding(),
@@ -94,13 +122,11 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
                 ExerciseHeader()
                 TableHeader()
                 TrainingSetBlock(
-                    trainingList = uiState.previousResultList,
-                    isPreviousTraining = true
+                    trainingList = uiState.previousResultList, isPreviousTraining = true
                 )
                 BoxDivider()
                 TrainingSetBlock(
-                    trainingList = uiState.currentResultList,
-                    isPreviousTraining = false
+                    trainingList = uiState.currentResultList, isPreviousTraining = false
                 )
                 SaveTrainingButton(exerciseViewModel)
             }
@@ -109,20 +135,118 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
 
     if (uiState.showAddSetDialog.value) {
         OpenTrainingResultDialog(
-            exerciseViewModel,
-            uiState.showAddSetDialog
+            exerciseViewModel, uiState.showAddSetDialog
+        )
+    }
+
+    if (uiState.showApproveDialog.value) {
+        CustomAlertDialog(
+            onDismissRequest = { exerciseViewModel.closeApproveDialog() },
+            onConfirmation = {
+                exerciseViewModel.saveCurrentTrainingSets()
+                exerciseViewModel.closeApproveDialog()
+            },
+            dialogTitle = "Сохранить тренировку?",
+            dialogText = "Вы уверены, что закончили на сегодня c этим упражнением?",
+            confirmText = stringResource(R.string.save),
+            cancelText = stringResource(R.string.cancel)
         )
     }
 
 }
 
-
-
-
+//@Preview
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommentBlock() {
- //todo
+fun CommentBlock(
+    openDialog: MutableState<Boolean> = mutableStateOf(false),
+    commentToSave: MutableState<String> = mutableStateOf("")
+) {
+    val text = remember {
+        mutableStateOf("")
+    }
+
+    val reaction = remember {
+        mutableStateOf(0)
+    }
+
+    Dialog(onDismissRequest = {/*todo launch method*/ }) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(3.dp))
+                .wrapContentHeight()
+                .background(Color.White)
+                .width(300.dp)
+                .padding(5.dp)
+        ) {
+            Column(
+                Modifier
+                    .wrapContentSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    OutlinedTextField(
+                        value = text.value,
+                        onValueChange = { text.value = it },
+                        label = { Text(text = stringResource(R.string.enter_your_comment)) },
+                        supportingText = { Text(text = stringResource(R.string.exercise_commentblock_supporting_text)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(MaterialTheme.colorScheme.background)
+
+                        .padding(vertical = 5.dp)
+                        .padding(end = 5.dp), horizontalArrangement = Arrangement.End
+
+                ) {
+
+                }
+
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(vertical = 5.dp)
+                        .padding(end = 5.dp), horizontalArrangement = Arrangement.End
+
+                ) {
+                    TextButton(onClick = {
+                        openDialog.value = false
+                    }, Modifier.padding(end = 5.dp)) {
+                        Text(
+                            stringResource(R.string.cancel),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    TextButton(onClick = {
+                        openDialog.value = false
+                        commentToSave.value = text.value
+                    }) {
+                        Text(
+                            stringResource(R.string.save),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
+
+
 
 @Composable
 fun TrainingSetBlock(trainingList: ArrayList<TrainingSet>, isPreviousTraining: Boolean) {
@@ -143,17 +267,14 @@ fun SaveTrainingButton(exerciseViewModel: ExerciseViewModel) {
             .fillMaxWidth()
             .wrapContentHeight()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(end = 5.dp),
-        Alignment.BottomEnd
-    )
-    {
+            .padding(end = 5.dp), Alignment.BottomEnd
+    ) {
         Button(
-            onClick = { exerciseViewModel.saveCurrentTrainingSets()},
+            onClick = { exerciseViewModel.openApproveDialog() },
             modifier = Modifier
                 .wrapContentSize()
                 .background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(20)
+                    color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(20)
                 )
         ) {
             Text(
@@ -271,8 +392,7 @@ fun ResultListItem(item: TrainingSet, index: Int, previousTraining: Boolean) {
                 horizontalArrangement = Arrangement.Center,
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.edit_20),
-                    contentDescription = "edit"
+                    painter = painterResource(id = R.drawable.edit_20), contentDescription = "edit"
                 )
             }
         }
