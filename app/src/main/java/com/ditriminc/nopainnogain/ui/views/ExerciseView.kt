@@ -1,13 +1,10 @@
 package com.ditriminc.nopainnogain.ui.views
 
 import android.app.Activity
-import android.app.RemoteAction
-import android.media.Image
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,18 +18,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -49,41 +40,35 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ditriminc.nopainnogain.R
 import com.ditriminc.nopainnogain.data.entities.TrainingSet
+import com.ditriminc.nopainnogain.ui.viewmodels.ExerciseUiState
 import com.ditriminc.nopainnogain.ui.viewmodels.ExerciseViewModel
 
 
 val columnWidth = 90.dp
 const val REACTION_TIRED = 1
-const val REACTION_NORMAL = 1
-const val REACTION_FRESH = 1
+const val REACTION_NORMAL = 2
+const val REACTION_FRESH = 3
 
 
 data class ReactionItem(
-    val img: Image,
-    val isSelected: Boolean,
+    val imgResource: Int, val isSelected: Boolean, val reactionId: Int
 )
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
     val uiState by exerciseViewModel.uiState.collectAsState()
@@ -92,15 +77,58 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
     val intent = activity.intent
     Log.e("EXVIEW", "id " + intent!!.getLongExtra("exerciseId", -1))
 
-    exerciseViewModel.fetchTrainingSets(intent!!.getLongExtra("exerciseId", -1))
+    exerciseViewModel.fetchTrainingSets(intent.getLongExtra("exerciseId", -1))
 
     LaunchedEffect(Unit) {
         //todo рассмотреть необходимость применения блока
     }
 
+    ExerciseBlockUI(uiState,
+        { exerciseViewModel.openApproveDialog() },
+        { exerciseViewModel.openAddSetDialog() })
+
+    if (uiState.showAddSetDialog.value) {
+        OpenTrainingResultDialog(
+            exerciseViewModel, uiState.showAddSetDialog
+        )
+    }
+
+    if (uiState.showApproveDialog.value) {
+        CustomAlertDialog(onDismissRequest = { exerciseViewModel.closeApproveDialog() },
+            onConfirmation = {
+                exerciseViewModel.closeApproveDialog()
+                exerciseViewModel.openCommentBlock()
+            },
+            dialogTitle = stringResource(R.string.save_this_training),
+            dialogText = stringResource(R.string.done_with_exercise),
+            confirmText = stringResource(R.string.save),
+            cancelText = stringResource(R.string.cancel)
+        )
+    }
+
+    if (uiState.showCommentBlock.value) {
+        CommentBlock(onDismissRequest = {
+            exerciseViewModel.closeCommentBlock()
+        },
+            onConfirmation = {
+                exerciseViewModel.saveCurrentExercise()
+                exerciseViewModel.closeCommentBlock()
+            },
+            reactionToSave = uiState.currentExerciseReaction,
+            commentToSave = uiState.currentExerciseComment
+        )
+    }
+}
+
+//@Preview
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ExerciseBlockUI(
+    uiState: ExerciseUiState, openApproveDialog: () -> Unit, openAddSetDialog: () -> Unit
+) {
     Scaffold(topBar = {}, floatingActionButton = {
         FloatingActionButton(
-            onClick = { exerciseViewModel.openAddSetDialog() },
+            onClick = { openAddSetDialog() },
             containerColor = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.size(60.dp),
             shape = CircleShape
@@ -124,43 +152,48 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
                 TrainingSetBlock(
                     trainingList = uiState.previousResultList, isPreviousTraining = true
                 )
+                PreviousCommentBlock(uiState = uiState)
                 BoxDivider()
                 TrainingSetBlock(
                     trainingList = uiState.currentResultList, isPreviousTraining = false
                 )
-                SaveTrainingButton(exerciseViewModel)
+                SaveTrainingButton(openApproveDialog)
             }
         }
     }
-
-    if (uiState.showAddSetDialog.value) {
-        OpenTrainingResultDialog(
-            exerciseViewModel, uiState.showAddSetDialog
-        )
-    }
-
-    if (uiState.showApproveDialog.value) {
-        CustomAlertDialog(
-            onDismissRequest = { exerciseViewModel.closeApproveDialog() },
-            onConfirmation = {
-                exerciseViewModel.saveCurrentTrainingSets()
-                exerciseViewModel.closeApproveDialog()
-            },
-            dialogTitle = "Сохранить тренировку?",
-            dialogText = "Вы уверены, что закончили на сегодня c этим упражнением?",
-            confirmText = stringResource(R.string.save),
-            cancelText = stringResource(R.string.cancel)
-        )
-    }
-
 }
 
-//@Preview
+@Composable
+fun PreviousCommentBlock(uiState: ExerciseUiState) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .background(MaterialTheme.colorScheme.secondary)
+            .padding(10.dp)
+    ) {
+        Divider()
+        Row {
+            Text(text = uiState.previousExerciseComment)
+        }
+        Row(
+            Modifier
+                .padding(top = 10.dp)
+                .fillMaxWidth(), horizontalArrangement = Arrangement.Center
+        ) {
+            PreviousReactionImage(reaction = uiState.previousExerciseReaction)
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentBlock(
-    openDialog: MutableState<Boolean> = mutableStateOf(false),
-    commentToSave: MutableState<String> = mutableStateOf("")
+    commentToSave: MutableState<String> = mutableStateOf(""),
+    reactionToSave: MutableState<Int> = mutableStateOf(-1),
+    onDismissRequest: () -> Unit = {},
+    onConfirmation: () -> Unit = {}
 ) {
     val text = remember {
         mutableStateOf("")
@@ -170,7 +203,7 @@ fun CommentBlock(
         mutableStateOf(0)
     }
 
-    Dialog(onDismissRequest = {/*todo launch method*/ }) {
+    Dialog(onDismissRequest = { onDismissRequest() }) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(3.dp))
@@ -190,13 +223,11 @@ fun CommentBlock(
                         .wrapContentHeight()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    OutlinedTextField(
-                        value = text.value,
+                    OutlinedTextField(value = text.value,
                         onValueChange = { text.value = it },
                         label = { Text(text = stringResource(R.string.enter_your_comment)) },
                         supportingText = { Text(text = stringResource(R.string.exercise_commentblock_supporting_text)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 Row(
@@ -204,12 +235,11 @@ fun CommentBlock(
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .background(MaterialTheme.colorScheme.background)
-
                         .padding(vertical = 5.dp)
-                        .padding(end = 5.dp), horizontalArrangement = Arrangement.End
-
+                        .padding(end = 5.dp),
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-
+                    ReactionBlock(selectedIndex = reaction)
                 }
 
                 Row(
@@ -222,7 +252,7 @@ fun CommentBlock(
 
                 ) {
                     TextButton(onClick = {
-                        openDialog.value = false
+                        onDismissRequest()
                     }, Modifier.padding(end = 5.dp)) {
                         Text(
                             stringResource(R.string.cancel),
@@ -231,8 +261,10 @@ fun CommentBlock(
                         )
                     }
                     TextButton(onClick = {
-                        openDialog.value = false
                         commentToSave.value = text.value
+                        reactionToSave.value = reaction.value
+                        Log.e("rectionid", "react " + reaction.value)
+                        onConfirmation()
                     }) {
                         Text(
                             stringResource(R.string.save),
@@ -245,7 +277,6 @@ fun CommentBlock(
         }
     }
 }
-
 
 
 @Composable
@@ -261,7 +292,7 @@ fun TrainingSetBlock(trainingList: ArrayList<TrainingSet>, isPreviousTraining: B
 }
 
 @Composable
-fun SaveTrainingButton(exerciseViewModel: ExerciseViewModel) {
+fun SaveTrainingButton(openApproveDialog: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -270,8 +301,7 @@ fun SaveTrainingButton(exerciseViewModel: ExerciseViewModel) {
             .padding(end = 5.dp), Alignment.BottomEnd
     ) {
         Button(
-            onClick = { exerciseViewModel.openApproveDialog() },
-            modifier = Modifier
+            onClick = { openApproveDialog() }, modifier = Modifier
                 .wrapContentSize()
                 .background(
                     color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(20)

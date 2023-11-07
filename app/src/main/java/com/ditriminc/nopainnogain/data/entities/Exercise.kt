@@ -15,9 +15,9 @@ data class Exercise(
     @ColumnInfo(name = "previous_results")
     val previousResultsIds: ArrayList<Long> = ArrayList(),
     @ColumnInfo(name = "previous_comment")
-    val previousComment : String?,
+    var previousComment : String?,
     @ColumnInfo(name = "previous_reaction")
-    val previousReaction : Int
+    var previousReaction : Int
 )
 
 

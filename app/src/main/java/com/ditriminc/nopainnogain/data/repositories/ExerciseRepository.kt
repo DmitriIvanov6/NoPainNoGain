@@ -60,12 +60,15 @@ class ExerciseRepository @Inject constructor(
         return exerciseDao.findById(id)
     }
 
+
     suspend fun addTrainingSets(trainingSet: ArrayList<TrainingSet>, currentExercise: Exercise?) {
         db.withTransaction {
-            currentExercise!!.previousResultsIds.clear()
+            currentExercise?.previousResultsIds?.clear()
             val setIDs = trainingSetDao.insertAll(trainingSet)
-            currentExercise.previousResultsIds.addAll(setIDs)
-            exerciseDao.update(currentExercise)
+            currentExercise?.previousResultsIds?.addAll(setIDs)
+            if (currentExercise != null) {
+                exerciseDao.update(currentExercise)
+            }
         }
     }
 

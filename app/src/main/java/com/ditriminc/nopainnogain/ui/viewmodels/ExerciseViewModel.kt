@@ -25,7 +25,10 @@ data class ExerciseUiState(
     val previousResultList: ArrayList<TrainingSet> = ArrayList(),
     val currentResultList: ArrayList<TrainingSet> = ArrayList(),
     val showAddSetDialog: MutableState<Boolean> = mutableStateOf(false),
-    val exerciseComment: MutableState<String> = mutableStateOf(""),
+    val currentExerciseComment: MutableState<String> = mutableStateOf(""),
+    val currentExerciseReaction: MutableState<Int> = mutableStateOf(-1),
+    val previousExerciseComment: String = "",
+    val previousExerciseReaction: Int = -1,
     val currentExerciseId: Long = 0L,
     val showApproveDialog: MutableState<Boolean> = mutableStateOf(false),
     val showCommentBlock: MutableState<Boolean> = mutableStateOf(false)
@@ -52,13 +55,14 @@ class ExerciseViewModel @Inject constructor(
             try {
                 val currentExercise = exerciseRepository.getExerciseById(exerciseId)
                 if (currentExercise != null) {
-                    Log.e("EXEERCISE", " " + currentExercise.previousResultsIds)
                     val previousResultList =
                         trainingSetRepository.fetchPreviousResultsList(currentExercise)
-                    Log.e("viewModel", "list " + previousResultList.isEmpty())
                     _uiState.update {
                         it.copy(
-                            previousResultList = previousResultList, currentExerciseId = exerciseId
+                            previousResultList = previousResultList,
+                            currentExerciseId = exerciseId,
+                            previousExerciseComment = currentExercise.previousComment ?: "",
+                            previousExerciseReaction = currentExercise.previousReaction
                         )
                     }
                 } else {
@@ -79,17 +83,25 @@ class ExerciseViewModel @Inject constructor(
     }
 
 
-    fun saveCurrentTrainingSets() {
+    fun saveCurrentExercise() {
         addTrainingSetJob?.cancel()
         addTrainingSetJob = viewModelScope.launch {
-            exerciseRepository.addTrainingSets(
-                _uiState.value.currentResultList, exerciseRepository.getExerciseById(
+            exerciseRepository.addTrainingSets(_uiState.value.currentResultList,
+                exerciseRepository.getExerciseById(
                     _uiState.value.currentExerciseId
-                )
+                )?.apply {
+                    previousComment = _uiState.value.currentExerciseComment.value
+                    previousReaction = _uiState.value.currentExerciseReaction.value
+                    Log.e("SAVECUREX", previousComment + previousReaction)
+                })
+        }
+        _uiState.update {
+            it.copy(
+                previousResultList = uiState.value.currentResultList,
+                currentResultList = ArrayList(),
+                previousExerciseReaction = uiState.value.currentExerciseReaction.value,
+                previousExerciseComment = uiState.value.currentExerciseComment.value
             )
-            _uiState.update {
-                it.copy(currentResultList = ArrayList())
-            }
         }
     }
 
@@ -104,6 +116,21 @@ class ExerciseViewModel @Inject constructor(
             it.copy(showApproveDialog = mutableStateOf(false))
         }
     }
+
+    //возможно заменить на тогл
+
+    fun openCommentBlock() {
+        _uiState.update {
+            it.copy(showCommentBlock = mutableStateOf(true))
+        }
+    }
+
+    fun closeCommentBlock() {
+        _uiState.update {
+            it.copy(showCommentBlock = mutableStateOf(false))
+        }
+    }
+
 
     fun addCurrentSet(reps: Int, weight: Int) {
         _uiState.value.currentResultList.add(
