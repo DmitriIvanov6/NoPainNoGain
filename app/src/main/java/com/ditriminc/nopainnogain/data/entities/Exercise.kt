@@ -14,6 +14,10 @@ data class Exercise(
     val groupId: Long?,
     @ColumnInfo(name = "previous_results")
     val previousResultsIds: ArrayList<Long> = ArrayList(),
+    @ColumnInfo(name = "previous_comment")
+    var previousComment : String?,
+    @ColumnInfo(name = "previous_reaction")
+    var previousReaction : Int
 )
 
 

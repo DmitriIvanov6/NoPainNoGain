@@ -20,4 +20,8 @@
     <string name="weight">Вес</string>
     <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
+    <string name="exercise_commentblock_supporting_text">Ваши ощущения после упражнения, поле можно оставить пустым</string>
+    <string name="enter_your_comment">Введите комментарий</string>
+    <string name="save_this_training">Сохранить тренировку?</string>
+    <string name="done_with_exercise">Вы уверены, что закончили на сегодня c этим упражнением?</string>
 </resources>

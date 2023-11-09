@@ -16,7 +16,6 @@ class TrainingSetRepository @Inject constructor(private val trainingSetDao: Trai
             for (prevId in exercise.previousResultsIds) {
                 val set = trainingSetDao.findById(prevId)
                 if (set != null) {
-                    Log.e("HERE", "fetch")
                     prevTrainingSets.add(set)
                 }
             }

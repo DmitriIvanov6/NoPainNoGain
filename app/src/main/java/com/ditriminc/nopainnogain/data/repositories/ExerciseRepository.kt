@@ -18,7 +18,8 @@ class ExerciseRepository @Inject constructor(
     private val db: AppDatabase
 ) {
 
-    suspend fun addExercise(name: String, groupId: Long, lastResultIds: ArrayList<Long>) {
+    suspend fun addExercise(name: String, groupId: Long, lastResultIds: ArrayList<Long>,
+                            previousReaction : Int, previousComment: String) {
         //todo watch callbacks and add transactional
         withContext(Dispatchers.IO) {
             if (exerciseDao.findByName(name) == null) {
@@ -26,7 +27,9 @@ class ExerciseRepository @Inject constructor(
                     Exercise(
                         name = name,
                         groupId = groupId,
-                        previousResultsIds = ArrayList()
+                        previousResultsIds = ArrayList(),
+                        previousReaction = previousReaction,
+                        previousComment = previousComment
                     )
                 )
             } else {
@@ -57,12 +60,15 @@ class ExerciseRepository @Inject constructor(
         return exerciseDao.findById(id)
     }
 
+
     suspend fun addTrainingSets(trainingSet: ArrayList<TrainingSet>, currentExercise: Exercise?) {
         db.withTransaction {
-            currentExercise!!.previousResultsIds.clear()
+            currentExercise?.previousResultsIds?.clear()
             val setIDs = trainingSetDao.insertAll(trainingSet)
-            currentExercise.previousResultsIds.addAll(setIDs)
-            exerciseDao.update(currentExercise)
+            currentExercise?.previousResultsIds?.addAll(setIDs)
+            if (currentExercise != null) {
+                exerciseDao.update(currentExercise)
+            }
         }
     }
 

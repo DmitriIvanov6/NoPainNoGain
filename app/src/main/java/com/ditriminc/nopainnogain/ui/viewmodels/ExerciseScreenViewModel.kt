@@ -90,7 +90,9 @@ class ExerciseScreenViewModel @Inject constructor(private val repository: Exerci
             repository.addExercise(
                 exerciseName,
                 groupId,
-                ArrayList()
+                ArrayList(),
+                0,
+                ""
             )
         }
     }

@@ -41,7 +41,6 @@ import com.ditriminc.nopainnogain.ui.viewmodels.ExerciseViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
-//@Preview
 @Composable
 //todo remove default params
 fun OpenTrainingResultDialog( exerciseViewModel: ExerciseViewModel,

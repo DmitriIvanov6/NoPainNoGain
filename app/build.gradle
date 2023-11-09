@@ -106,7 +106,12 @@ dependencies {
 
 
     //Navigation
-
+//    def nav_version = "2.7.5"
+//    implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
+//    implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
+//    implementation "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"
+//    implementation "androidx.navigation:navigation-compose:$nav_version"
+//
 
 
 

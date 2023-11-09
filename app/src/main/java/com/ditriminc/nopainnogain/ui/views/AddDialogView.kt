@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.ditriminc.nopainnogain.R
 
+/** Add new element dialog (new Excercise, training day or muscle group)*/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenAddDialog(

@@ -5,7 +5,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ditriminc.nopainnogain.data.entities.Exercise
 import com.ditriminc.nopainnogain.data.entities.TrainingSet
 import com.ditriminc.nopainnogain.data.repositories.ExerciseRepository
 import com.ditriminc.nopainnogain.data.repositories.TrainingSetRepository
@@ -26,8 +25,13 @@ data class ExerciseUiState(
     val previousResultList: ArrayList<TrainingSet> = ArrayList(),
     val currentResultList: ArrayList<TrainingSet> = ArrayList(),
     val showAddSetDialog: MutableState<Boolean> = mutableStateOf(false),
-    val exerciseComment: MutableState<String> = mutableStateOf(""),
-    val currentExerciseId: Long = 0L
+    val currentExerciseComment: MutableState<String> = mutableStateOf(""),
+    val currentExerciseReaction: MutableState<Int> = mutableStateOf(-1),
+    val previousExerciseComment: String = "",
+    val previousExerciseReaction: Int = -1,
+    val currentExerciseId: Long = 0L,
+    val showApproveDialog: MutableState<Boolean> = mutableStateOf(false),
+    val showCommentBlock: MutableState<Boolean> = mutableStateOf(false)
 )
 
 @HiltViewModel
@@ -51,14 +55,14 @@ class ExerciseViewModel @Inject constructor(
             try {
                 val currentExercise = exerciseRepository.getExerciseById(exerciseId)
                 if (currentExercise != null) {
-                    Log.e("EXEERCISE", " " + currentExercise.previousResultsIds)
                     val previousResultList =
                         trainingSetRepository.fetchPreviousResultsList(currentExercise)
-                    Log.e("viewModel", "list " + previousResultList.isEmpty())
                     _uiState.update {
                         it.copy(
                             previousResultList = previousResultList,
-                            currentExerciseId = exerciseId
+                            currentExerciseId = exerciseId,
+                            previousExerciseComment = currentExercise.previousComment ?: "",
+                            previousExerciseReaction = currentExercise.previousReaction
                         )
                     }
                 } else {
@@ -78,18 +82,55 @@ class ExerciseViewModel @Inject constructor(
         }
     }
 
-    fun saveCurrentTrainingSets() {
 
+    fun saveCurrentExercise() {
         addTrainingSetJob?.cancel()
         addTrainingSetJob = viewModelScope.launch {
-            exerciseRepository.addTrainingSets(
-                _uiState.value.currentResultList,
-                exerciseRepository.getExerciseById(_uiState.value.currentExerciseId
-            ))
-            _uiState.value.currentResultList.clear() //todo сделать апдейтом на пустой лист
-            fetchTrainingSets(_uiState.value.currentExerciseId)
+            exerciseRepository.addTrainingSets(_uiState.value.currentResultList,
+                exerciseRepository.getExerciseById(
+                    _uiState.value.currentExerciseId
+                )?.apply {
+                    previousComment = _uiState.value.currentExerciseComment.value
+                    previousReaction = _uiState.value.currentExerciseReaction.value
+                    Log.e("SAVECUREX", previousComment + previousReaction)
+                })
+        }
+        _uiState.update {
+            it.copy(
+                previousResultList = uiState.value.currentResultList,
+                currentResultList = ArrayList(),
+                previousExerciseReaction = uiState.value.currentExerciseReaction.value,
+                previousExerciseComment = uiState.value.currentExerciseComment.value
+            )
         }
     }
+
+    fun openApproveDialog() {
+        _uiState.update {
+            it.copy(showApproveDialog = mutableStateOf(true))
+        }
+    }
+
+    fun closeApproveDialog() {
+        _uiState.update {
+            it.copy(showApproveDialog = mutableStateOf(false))
+        }
+    }
+
+    //возможно заменить на тогл
+
+    fun openCommentBlock() {
+        _uiState.update {
+            it.copy(showCommentBlock = mutableStateOf(true))
+        }
+    }
+
+    fun closeCommentBlock() {
+        _uiState.update {
+            it.copy(showCommentBlock = mutableStateOf(false))
+        }
+    }
+
 
     fun addCurrentSet(reps: Int, weight: Int) {
         _uiState.value.currentResultList.add(
@@ -101,7 +142,6 @@ class ExerciseViewModel @Inject constructor(
             )
         )
     }
-
 
     override fun onCleared() {
         Log.e("viewModel", "Stopped")
