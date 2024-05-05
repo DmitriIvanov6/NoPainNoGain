@@ -1,20 +1,13 @@
 package com.ditriminc.nopainnogain.ui.views
 
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,29 +23,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ditriminc.nopainnogain.ExercisesScreenActivity
+import androidx.navigation.NavController
 import com.ditriminc.nopainnogain.R
-import com.ditriminc.nopainnogain.domain.findActivity
 import com.ditriminc.nopainnogain.ui.viewmodels.GroupScreenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupScreen(groupScreenViewModel: GroupScreenViewModel = viewModel()) {
+fun GroupScreen(
+    dayId: Long, navController: NavController, groupScreenViewModel: GroupScreenViewModel
+) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val uiState by groupScreenViewModel.uiState.collectAsState()
-    val context = LocalContext.current
-    val activity = context.findActivity()
-    val intent = activity?.intent
     //todo подумать как вызывать, и нужна ли подгрузка групп
-    uiState.dayId.value = intent!!.getLongExtra("dayId", -1)
+    uiState.dayId.value = dayId
     groupScreenViewModel.fetchDayGroups(uiState.dayId.value)
     Scaffold(
         topBar = {},
@@ -123,16 +111,12 @@ fun GroupScreen(groupScreenViewModel: GroupScreenViewModel = viewModel()) {
         uiState.newGroupToAddName.value = ""
     }
     if (uiState.selectedGroupId.value != -1L) {
-        startExerciseScreenActivity(uiState.selectedGroupId.value, context, activity)
+        navController.navigate("exercises/${uiState.selectedGroupId.value}")
         uiState.selectedGroupId.value = -1L
     }
 }
 
-fun startExerciseScreenActivity(groupId: Long, context: Context, activity: Activity) {
-    val intent = Intent(context, ExercisesScreenActivity::class.java)
-    intent.putExtra("groupId", groupId)
-    activity.startActivity(intent)
-}
+
 
 
 

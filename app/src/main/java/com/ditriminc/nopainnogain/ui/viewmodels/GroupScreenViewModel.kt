@@ -2,6 +2,7 @@ package com.ditriminc.nopainnogain.ui.viewmodels
 
 import android.util.Log
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,7 +23,7 @@ data class MuscleGroupUiState(
     val groupNames: ArrayList<String> = ArrayList(mutableListOf(" ")),
     val showAddGroupDialog: MutableState<Boolean> = mutableStateOf(false),
     val newGroupToAddName: MutableState<String> = mutableStateOf(""),
-    val selectedGroupId: MutableState<Long> = mutableStateOf(-1L)
+    val selectedGroupId: MutableState<Long> = mutableLongStateOf(-1L)
 )
 
 @HiltViewModel
@@ -38,7 +39,6 @@ class GroupScreenViewModel @Inject constructor(private val repository: GroupScre
 
     init {
         viewModelScope.launch { }
-        Log.e("MainVM", "init")
     }
 
 
@@ -85,7 +85,7 @@ class GroupScreenViewModel @Inject constructor(private val repository: GroupScre
     }
 
     fun addNewGroup(groupName: String, dayId: Long) {
-        Log.e("ADDNEWGroup", "HERE");
+        Log.e("HERE", "ADDNEWGroup ");
         addNewGroupJob?.cancel()
         addNewGroupJob = viewModelScope.launch {
             repository.addGroup(

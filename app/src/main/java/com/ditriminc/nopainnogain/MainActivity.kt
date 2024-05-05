@@ -7,23 +7,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
 import com.ditriminc.nopainnogain.ui.theme.NoPainNoGainTheme
-import com.ditriminc.nopainnogain.ui.views.MainScreen
-import dagger.hilt.EntryPoint
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-   //       deleteDatabase("NoPainNoGain.db")//todo remove before start
+//          deleteDatabase("NoPainNoGain.db")//todo remove before start
         setContent {
+            val navController = rememberNavController()
             NoPainNoGainTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen();
+
+                    MainNavigation(navController = navController)
                 }
             }
         }

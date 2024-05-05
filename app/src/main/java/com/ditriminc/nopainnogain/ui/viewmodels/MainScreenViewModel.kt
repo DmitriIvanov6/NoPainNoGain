@@ -2,6 +2,7 @@ package com.ditriminc.nopainnogain.ui.viewmodels
 
 import android.util.Log
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +22,7 @@ data class MainScreenUiState(
     val dayNames: ArrayList<String> = ArrayList(mutableListOf(" ")),
     val showAddDayDialog: MutableState<Boolean> = mutableStateOf(false),
     val newDayToAddName: MutableState<String> = mutableStateOf(""),
-    val selectedDayId: MutableState<Long> = mutableStateOf(-1L)
+    val selectedDayId: MutableState<Long> = mutableLongStateOf(-1L)
 )
 
 @HiltViewModel
@@ -56,7 +57,6 @@ class MainScreenViewModel @Inject constructor(private val repository: MainScreen
     }
 
     fun addNewDay(dayName: String) {
-        Log.e("ADDNEWDAY", "HERE")
         addNewDayJob?.cancel()
         addNewDayJob = viewModelScope.launch {
             repository.addTrainingDay(dayName) //todo проверить, как будет работать, возможно реализовать колбэки
