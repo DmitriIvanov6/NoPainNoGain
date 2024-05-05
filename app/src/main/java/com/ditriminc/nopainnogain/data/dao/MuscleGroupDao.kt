@@ -6,9 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import com.ditriminc.nopainnogain.data.entities.MuscleGroup
-import com.ditriminc.nopainnogain.data.entities.TrainingDay
 import com.ditriminc.nopainnogain.data.relations.DayWithMuscleGroups
-
 
 @Dao
 interface MuscleGroupDao {
@@ -27,6 +25,6 @@ interface MuscleGroupDao {
 
     @Transaction
     @Query("SELECT * FROM training_days WHERE id = :id")
-    suspend fun getDaysWithGroups(id: Long ): DayWithMuscleGroups
+    suspend fun getDaysWithGroups(id: Long): DayWithMuscleGroups?
 
 }

@@ -1,6 +1,5 @@
 package com.ditriminc.nopainnogain.ui.views
 
-import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,9 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -38,46 +37,36 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ditriminc.nopainnogain.R
 import com.ditriminc.nopainnogain.data.entities.TrainingSet
 import com.ditriminc.nopainnogain.ui.viewmodels.ExerciseUiState
 import com.ditriminc.nopainnogain.ui.viewmodels.ExerciseViewModel
-
 
 val columnWidth = 90.dp
 const val REACTION_TIRED = 1
 const val REACTION_NORMAL = 2
 const val REACTION_FRESH = 3
 
-
 data class ReactionItem(
     val imgResource: Int, val isSelected: Boolean, val reactionId: Int
 )
 
-
 @Composable
-fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
+fun ExerciseView(exerciseId: Long, exerciseViewModel: ExerciseViewModel) {
     val uiState by exerciseViewModel.uiState.collectAsState()
-    val context = LocalContext.current
-    val activity = context as Activity
-    val intent = activity.intent
-    Log.e("EXVIEW", "id " + intent!!.getLongExtra("exerciseId", -1))
-
-    exerciseViewModel.fetchTrainingSets(intent.getLongExtra("exerciseId", -1))
+    exerciseViewModel.fetchTrainingSets(exerciseId)
 
     LaunchedEffect(Unit) {
         //todo рассмотреть необходимость применения блока
@@ -94,7 +83,8 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
     }
 
     if (uiState.showApproveDialog.value) {
-        CustomAlertDialog(onDismissRequest = { exerciseViewModel.closeApproveDialog() },
+        CustomAlertDialog(
+            onDismissRequest = { exerciseViewModel.closeApproveDialog() },
             onConfirmation = {
                 exerciseViewModel.closeApproveDialog()
                 exerciseViewModel.openCommentBlock()
@@ -107,9 +97,10 @@ fun ExerciseView(exerciseViewModel: ExerciseViewModel = viewModel()) {
     }
 
     if (uiState.showCommentBlock.value) {
-        CommentBlock(onDismissRequest = {
-            exerciseViewModel.closeCommentBlock()
-        },
+        CommentBlock(
+            onDismissRequest = {
+                exerciseViewModel.closeCommentBlock()
+            },
             onConfirmation = {
                 exerciseViewModel.saveCurrentExercise()
                 exerciseViewModel.closeCommentBlock()
@@ -172,7 +163,7 @@ fun PreviousCommentBlock(uiState: ExerciseUiState) {
             .background(MaterialTheme.colorScheme.secondary)
             .padding(10.dp)
     ) {
-        Divider()
+        HorizontalDivider()
         Row {
             Text(text = uiState.previousExerciseComment)
         }
@@ -186,12 +177,11 @@ fun PreviousCommentBlock(uiState: ExerciseUiState) {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentBlock(
     commentToSave: MutableState<String> = mutableStateOf(""),
-    reactionToSave: MutableState<Int> = mutableStateOf(-1),
+    reactionToSave: MutableState<Int> = mutableIntStateOf(-1),
     onDismissRequest: () -> Unit = {},
     onConfirmation: () -> Unit = {}
 ) {
@@ -200,7 +190,7 @@ fun CommentBlock(
     }
 
     val reaction = remember {
-        mutableStateOf(0)
+        mutableIntStateOf(0)
     }
 
     Dialog(onDismissRequest = { onDismissRequest() }) {
@@ -223,10 +213,17 @@ fun CommentBlock(
                         .wrapContentHeight()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    OutlinedTextField(value = text.value,
+                    OutlinedTextField(
+                        value = text.value,
                         onValueChange = { text.value = it },
                         label = { Text(text = stringResource(R.string.enter_your_comment)) },
-                        supportingText = { Text(text = stringResource(R.string.exercise_commentblock_supporting_text)) },
+                        supportingText = {
+                            Text(
+                                text = stringResource(
+                                    R.string.exercise_commentblock_supporting_text
+                                )
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -262,8 +259,8 @@ fun CommentBlock(
                     }
                     TextButton(onClick = {
                         commentToSave.value = text.value
-                        reactionToSave.value = reaction.value
-                        Log.e("rectionid", "react " + reaction.value)
+                        reactionToSave.value = reaction.intValue
+                        Log.e("rectionid", "react " + reaction.intValue)
                         onConfirmation()
                     }) {
                         Text(
@@ -278,14 +275,13 @@ fun CommentBlock(
     }
 }
 
-
 @Composable
 fun TrainingSetBlock(trainingList: ArrayList<TrainingSet>, isPreviousTraining: Boolean) {
     LazyColumn(modifier = Modifier.wrapContentHeight()) {
         itemsIndexed(items = trainingList, itemContent = { index, item ->
             ResultListItem(item, index + 1, isPreviousTraining)
             if (index < trainingList.size - 1) {
-                Divider()
+                HorizontalDivider()
             }
         })
     }
@@ -325,7 +321,6 @@ fun BoxDivider() {
     )
 }
 
-
 @Composable
 fun ExerciseHeader(exerciseName: String = "Title") {
     Row(
@@ -341,7 +336,6 @@ fun ExerciseHeader(exerciseName: String = "Title") {
     }
 
 }
-
 
 //todo сократить циклом ?
 @Composable
@@ -428,7 +422,6 @@ fun ResultListItem(item: TrainingSet, index: Int, previousTraining: Boolean) {
         }
     }
 }
-
 
 //todo сократить циклом
 @Composable

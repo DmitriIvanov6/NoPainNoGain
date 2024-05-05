@@ -35,7 +35,6 @@ interface ExerciseDao {
 
     @Transaction
     @Query("SELECT * FROM muscle_groups WHERE id = :id")
-    suspend fun getGroupWithExercises(id: Long ): GroupWithExercises
-
+    suspend fun getGroupWithExercises(id: Long): GroupWithExercises?
 
 }

@@ -1,6 +1,5 @@
 package com.ditriminc.nopainnogain.data.repositories
 
-import androidx.compose.ui.res.colorResource
 import androidx.room.withTransaction
 import com.ditriminc.nopainnogain.data.dao.ExerciseDao
 import com.ditriminc.nopainnogain.data.dao.TrainingSetDao
@@ -9,7 +8,6 @@ import com.ditriminc.nopainnogain.data.entities.Exercise
 import com.ditriminc.nopainnogain.data.entities.TrainingSet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Date
 import javax.inject.Inject
 
 class ExerciseRepository @Inject constructor(
@@ -18,8 +16,10 @@ class ExerciseRepository @Inject constructor(
     private val db: AppDatabase
 ) {
 
-    suspend fun addExercise(name: String, groupId: Long, lastResultIds: ArrayList<Long>,
-                            previousReaction : Int, previousComment: String) {
+    suspend fun addExercise(
+        name: String, groupId: Long, lastResultIds: ArrayList<Long>,
+        previousReaction: Int, previousComment: String
+    ) {
         //todo watch callbacks and add transactional
         withContext(Dispatchers.IO) {
             if (exerciseDao.findByName(name) == null) {
@@ -39,12 +39,10 @@ class ExerciseRepository @Inject constructor(
 
     }
 
-
-
     suspend fun getExercisesOfGroupSelected(groupId: Long): ArrayList<String> {
         val groupWithExercises = exerciseDao.getGroupWithExercises(groupId)
         val exerciseNameList = ArrayList<String>()
-        for (exercise in groupWithExercises.exercisesList) {
+        for (exercise in groupWithExercises?.exercisesList ?: emptyList()) {
             exerciseNameList.add(exercise.name ?: "")
         }
         return exerciseNameList
@@ -59,7 +57,6 @@ class ExerciseRepository @Inject constructor(
     suspend fun getExerciseById(id: Long): Exercise? {
         return exerciseDao.findById(id)
     }
-
 
     suspend fun addTrainingSets(trainingSet: ArrayList<TrainingSet>, currentExercise: Exercise?) {
         db.withTransaction {
